@@ -333,6 +333,9 @@ geometry_msgs::msg::Twist RobotController::forward_command() const {
     geometry_msgs::msg::Twist cmd;
     cmd.linear.x = FORWARD_SPEED_;
     cmd.angular.z = 0.0;
+
+    RCLCPP_WARN(this->get_logger(), "[CUR TWIST] linear.x=%.3f angular.z=%.3f", cmd.linear.x, cmd.angular.z);
+
     return cmd;
 }
 
