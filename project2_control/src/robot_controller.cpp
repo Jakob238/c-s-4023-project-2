@@ -368,6 +368,8 @@ void RobotController::control_loop() {
     }
     // 2. Keyboard teleop
     else if(teleop_active()) {
+        RCLCPP_WARN(this->get_logger(), "[TELEOP ACTIVE]");
+
         escape_active_ = false;
         random_turn_active_ = false;
         chosen = keyboard_command();
@@ -387,6 +389,8 @@ void RobotController::control_loop() {
                 chosen = av;
             } else {
                 // 5. Random turn
+                RCLCPP_WARN(this->get_logger(), "[RANDOM TURN ACTIVE]");
+
                 geometry_msgs::msg::Twist rt = random_turn_command();
                 if(random_turn_active_ || std::fabs(rt.angular.z) > 1e-6) {
                     chosen = rt;
