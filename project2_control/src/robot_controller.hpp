@@ -23,10 +23,10 @@ class RobotController : public rclcpp::Node {
     // Subscribers - for odometry, laser scan, and keyboard input
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
-    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr key_sub_;
+    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr key_sub_;
 
     // Publisher - for cmd_vel
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_pub_;
 
     // Timer - for control loop
     rclcpp::TimerBase::SharedPtr timer_;
@@ -34,12 +34,12 @@ class RobotController : public rclcpp::Node {
     // Callbacks
     void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
-    void keyboard_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
+    void keyboard_callback(const geometry_msgs::msg::TwistStamped::SharedPtr msg);
 
     nav_msgs::msg::Odometry::SharedPtr latest_odom_;
     sensor_msgs::msg::LaserScan::SharedPtr latest_scan_;
 
-    geometry_msgs::msg::Twist last_key_cmd_;
+    geometry_msgs::msg::TwistStamped last_key_cmd_;
     rclcpp::Time last_key_time_;
     double key_timeout_sec_;
 
@@ -52,7 +52,7 @@ class RobotController : public rclcpp::Node {
 
     // Robot behavior state
     double dist_traveled_turn_;
-    geometry_msgs::msg::Twist last_published_cmd_;
+    geometry_msgs::msg::TwistStamped last_published_cmd_;
 
     // Constants
     double SAFETY_DISTANCE_;
@@ -91,12 +91,12 @@ class RobotController : public rclcpp::Node {
     double global_min_range() const;
 
     // Behavior functions (priority 1–6)
-    geometry_msgs::msg::Twist halt_command();
-    geometry_msgs::msg::Twist keyboard_command() const;
-    geometry_msgs::msg::Twist escape_command();
-    geometry_msgs::msg::Twist avoid_command();
-    geometry_msgs::msg::Twist random_turn_command();
-    geometry_msgs::msg::Twist forward_command() const;
+    geometry_msgs::msg::TwistStamped halt_command();
+    geometry_msgs::msg::TwistStamped keyboard_command() const;
+    geometry_msgs::msg::TwistStamped escape_command();
+    geometry_msgs::msg::TwistStamped avoid_command();
+    geometry_msgs::msg::TwistStamped random_turn_command();
+    geometry_msgs::msg::TwistStamped forward_command() const;
 
     void control_loop();
 };
