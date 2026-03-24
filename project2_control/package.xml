@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>project1_control</name>
+  <name>project2_control</name>
   <version>0.0.0</version>
   <description>Provides a reactive robot controller that can react to obstacles and be teloperated</description>
   <maintainer email="hyde@ou.edu">Hyde</maintainer>
