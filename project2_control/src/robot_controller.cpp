@@ -18,7 +18,7 @@ RobotController::RobotController()
       escape_extra_turn_rad_(-M_PI / 6.0, M_PI / 6.0) {   // ±30 deg per spec
 
     // Publisher for velocity commands
-    cmd_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+    cmd_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
 
     // Subscribers for laser scan, odometry, and keyboard input
     scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -27,14 +27,14 @@ RobotController::RobotController()
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "/odom", 10,
         std::bind(&RobotController::odom_callback, this, std::placeholders::_1));
-    key_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
+    key_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
         "/cmd_vel_key", 10,
         std::bind(&RobotController::keyboard_callback, this, std::placeholders::_1));
 
     // Timing for teleop
     key_timeout_sec_ = 0.25;
     last_key_time_ = this->now();
-    last_key_cmd_ = geometry_msgs::msg::Twist();
+    last_key_cmd_ = geometry_msgs::msg::TwistStamped();
 
     // Constants
     // Safety threshold 0.22–0.30m (slightly larger than robot radius)
@@ -49,7 +49,7 @@ RobotController::RobotController()
 
     latest_scan_ = nullptr;
     latest_odom_ = nullptr;
-    last_published_cmd_ = geometry_msgs::msg::Twist();
+    last_published_cmd_ = geometry_msgs::msg::TwistStamped();
 
     // Timer for control loop
     timer_ = this->create_wall_timer(
@@ -96,7 +96,7 @@ void RobotController::odom_callback(
 
 // Store the latest keyboard input for use in the control loop
 void RobotController::keyboard_callback(
-    const geometry_msgs::msg::Twist::SharedPtr msg) {
+    const geometry_msgs::msg::TwistStamped::SharedPtr msg) {
     last_key_cmd_ = *msg;
     last_key_time_ = this->now();
 }
@@ -209,22 +209,22 @@ bool RobotController::collision_found() const {
 }
 
 // Stops all of the robot velocity aspects
-geometry_msgs::msg::Twist RobotController::halt_command() {
-    geometry_msgs::msg::Twist cmd;
+geometry_msgs::msg::TwistStamped RobotController::halt_command() {
+    geometry_msgs::msg::TwistStamped cmd;
     cmd.linear.x = 0.0;
     cmd.angular.z = 0.0;
     return cmd;
 }
 
 // Gets the latest keyboard command
-geometry_msgs::msg::Twist RobotController::keyboard_command() const {
+geometry_msgs::msg::TwistStamped RobotController::keyboard_command() const {
     return last_key_cmd_;
 }
 
 // Allows the robot to escape symmetric obstacles within 1ft
 // by turing ~180 +- 30 degrees
-geometry_msgs::msg::Twist RobotController::escape_command() {
-    geometry_msgs::msg::Twist cmd;
+geometry_msgs::msg::TwistStamped RobotController::escape_command() {
+    geometry_msgs::msg::TwistStamped cmd;
     cmd.linear.x = 0.0;
     cmd.angular.z = 0.0;
 
@@ -268,8 +268,8 @@ geometry_msgs::msg::Twist RobotController::escape_command() {
 
 // Avoids asymmetric obstacles within 1ft in front.
 // Turn away from the closer side.
-geometry_msgs::msg::Twist RobotController::avoid_command() {
-    geometry_msgs::msg::Twist cmd;
+geometry_msgs::msg::TwistStamped RobotController::avoid_command() {
+    geometry_msgs::msg::TwistStamped cmd;
     cmd.linear.x = 0.0;
     cmd.angular.z = 0.0;
 
@@ -298,8 +298,8 @@ geometry_msgs::msg::Twist RobotController::avoid_command() {
 }
 
 // Creates a random turn command
-geometry_msgs::msg::Twist RobotController::random_turn_command() {
-    geometry_msgs::msg::Twist cmd;
+geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
+    geometry_msgs::msg::TwistStamped cmd;
     cmd.linear.x = 0.0;
     cmd.angular.z = 0.0;
 
@@ -329,8 +329,8 @@ geometry_msgs::msg::Twist RobotController::random_turn_command() {
 }
 
 // Moves the robot forward
-geometry_msgs::msg::Twist RobotController::forward_command() const {
-    geometry_msgs::msg::Twist cmd;
+geometry_msgs::msg::TwistStamped RobotController::forward_command() const {
+    geometry_msgs::msg::TwistStamped cmd;
     cmd.linear.x = FORWARD_SPEED_;
     cmd.angular.z = 0.0;
 
@@ -341,7 +341,7 @@ geometry_msgs::msg::Twist RobotController::forward_command() const {
 
 // Updates the distance traveled to determine if a random turn should occur
 void RobotController::update_distance_traveled(
-    const geometry_msgs::msg::Twist& cmd) {
+    const geometry_msgs::msg::TwistStamped& cmd) {
     if(cmd.linear.x > 0.0 && std::fabs(cmd.angular.z) < 1e-6) {
         const double dx = current_x_position_ - last_x_position_;
         const double dy = current_y_position_ - last_y_position_;
@@ -360,7 +360,7 @@ void RobotController::control_loop() {
 
     update_distance_traveled(last_published_cmd_);
 
-    geometry_msgs::msg::Twist chosen;
+    geometry_msgs::msg::TwistStamped chosen;
 
     // 1. Halt — bumper equivalent via laser global minimum
     if(collision_found()) {
@@ -378,14 +378,14 @@ void RobotController::control_loop() {
         chosen = keyboard_command();
     } else {
         // 3. Escape
-        geometry_msgs::msg::Twist esc = escape_command();
+        geometry_msgs::msg::TwistStamped esc = escape_command();
         if(escape_active_ || std::fabs(esc.angular.z) > 1e-6) {
             random_turn_active_ = false;
             dist_traveled_turn_ = 0.0;
             chosen = esc;
         } else {
             // 4. Avoid fires while asymmetric obstacle present
-            geometry_msgs::msg::Twist av = avoid_command();
+            geometry_msgs::msg::TwistStamped av = avoid_command();
             if(std::fabs(av.angular.z) > 1e-6) {
                 random_turn_active_ = false;
                 dist_traveled_turn_ = 0.0;
@@ -394,7 +394,7 @@ void RobotController::control_loop() {
                 // 5. Random turn
                 RCLCPP_WARN(this->get_logger(), "[RANDOM TURN ACTIVE]");
 
-                geometry_msgs::msg::Twist rt = random_turn_command();
+                geometry_msgs::msg::TwistStamped rt = random_turn_command();
                 if(random_turn_active_ || std::fabs(rt.angular.z) > 1e-6) {
                     chosen = rt;
                 } else {
