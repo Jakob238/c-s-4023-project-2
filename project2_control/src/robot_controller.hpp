@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <geometry_msgs/msg/twist.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>  // <-- FIXED INCLUDE
 #include <limits>
 #include <nav_msgs/msg/odometry.hpp>
 #include <random>
@@ -83,7 +83,7 @@ class RobotController : public rclcpp::Node {
     static double normalize_angle(double a);
     static double angle_diff(double target, double current);
     bool collision_found() const;
-    void update_distance_traveled(const geometry_msgs::msg::Twist& cmd);
+    void update_distance_traveled(const geometry_msgs::msg::TwistStamped& cmd);  // <-- FIXED PARAMETER TYPE
     bool scan_ready() const;
     double min_range_in_angle_window(double angle_lo, double angle_hi) const;
     void front_left_right_mins(double& min_left, double& min_right) const;
