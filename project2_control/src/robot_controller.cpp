@@ -406,5 +406,7 @@ void RobotController::control_loop() {
     }
 
     last_published_cmd_ = chosen;
+
     cmd_pub_->publish(chosen);
+    RCLCPP_WARN(this->get_logger(), "[PUB] linear.x=%.3f angular.z=%.3f", chosen.linear.x, chosen.angular.z);
 }
