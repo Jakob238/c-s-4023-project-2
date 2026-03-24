@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(project1_control) 
+project(project2_control) 
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -18,16 +18,16 @@ find_package(tf2 REQUIRED)
 
 find_package(tf2_geometry_msgs REQUIRED)
 
-add_executable(project1_controller
+add_executable(project2_controller
   src/main.cpp
   src/robot_controller.cpp
 )
 
-target_include_directories(project1_controller PRIVATE
+target_include_directories(project2_controller PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-ament_target_dependencies(project1_controller
+ament_target_dependencies(project2_controller
   rclcpp
   std_msgs
   geometry_msgs
@@ -38,7 +38,7 @@ ament_target_dependencies(project1_controller
 )
 
 install(TARGETS
-  project1_controller
+  project2_controller
   DESTINATION lib/${PROJECT_NAME}
 )
 
