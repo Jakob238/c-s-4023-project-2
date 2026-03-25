@@ -41,7 +41,7 @@ RobotController::RobotController()
     // Safety threshold 0.22–0.30m (slightly larger than robot radius)
     SAFETY_DISTANCE_ = 0.27;
     // Avoid/escape trigger within 1 foot
-    OBSTACLE_DISTANCE_ = 0.3048;
+    OBSTACLE_DISTANCE_ = 0.3048 * 2;
 
     FORWARD_SPEED_ = 0.10;
     AVOID_TURN_SPEED_ = 1.2;
