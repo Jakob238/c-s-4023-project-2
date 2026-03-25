@@ -187,7 +187,7 @@ void RobotController::front_left_right_mins(double& min_left, double& min_right)
     min_right = min_range_in_angle_window(FORWARD_ANGLE_OFFSET - half_cone, FORWARD_ANGLE_OFFSET);
 
     RCLCPP_INFO(this->get_logger(),
-                "[FRONT LEFT RIGHT MINS] L=%.3f R=%.3f az=%.2f", min_left, min_right);  // <-- FIXED
+                "[FRONT LEFT RIGHT MINS] L=%.3f R=%.3f", min_left, min_right);  // <-- FIXED
 }
 
 // Narrow dead-ahead window: +=10 degrees around forward direction.
