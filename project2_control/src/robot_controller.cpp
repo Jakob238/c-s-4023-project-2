@@ -391,6 +391,8 @@ void RobotController::control_loop() {
             } else {
                 geometry_msgs::msg::TwistStamped rt = random_turn_command();
                 if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {  // <-- FIXED
+                    RCLCPP_WARN(this->get_logger(), "[RT]");
+
                     chosen = rt;
                 } else {
                     // 6. Forward — base layer
