@@ -379,6 +379,13 @@ void RobotController::control_loop() {
         chosen = halt_command();
         RCLCPP_WARN(this->get_logger(), "[HALT] min=%.3f", global_min_range());
         // bumper_hit_ = true;
+
+    } else if(teleop_active()) {
+        RCLCPP_WARN(this->get_logger(), "[TELEOP ACTIVE]");
+
+        escape_active_ = false;
+        random_turn_active_ = false;
+        chosen = keyboard_command();
     } else {
         // bumper_hit_ = false;
         geometry_msgs::msg::TwistStamped esc = escape_command();
