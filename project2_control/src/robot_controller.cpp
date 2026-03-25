@@ -32,11 +32,6 @@ RobotController::RobotController()
         "/cmd_vel_key", 10,
         std::bind(&RobotController::keyboard_callback, this, std::placeholders::_1));
 
-    hazard_sub_ = this->create_subscription<irobot_create_msgs::msg::HazardDetectionVector>(
-        "/hazard_detection",
-        rclcpp::SensorDataQoS(),
-        std::bind(&RobotController::hazard_callback, this, std::placeholders::_1));
-
     // Timing for teleop
     key_timeout_sec_ = 0.25;
     last_key_time_ = this->now();
@@ -70,19 +65,6 @@ RobotController::RobotController()
 void RobotController::scan_callback(
     const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     latest_scan_ = msg;
-}
-
-void RobotController::hazard_callback(const irobot_create_msgs::msg::HazardDetectionVector::SharedPtr msg) {
-    RCLCPP_WARN(this->get_logger(), "Bumper contact detected!");
-
-    bumper_hit_ = false;
-    for(const auto& detection : msg->detections) {
-        if(detection.type == irobot_create_msgs::msg::HazardDetection::BUMP) {
-            bumper_hit_ = true;
-            RCLCPP_WARN(this->get_logger(), "Bumper contact detected!");
-            break;
-        }
-    }
 }
 
 // Store the latest odometry data for use in the control loop
@@ -223,9 +205,9 @@ double RobotController::global_min_range() const {
 
 // Detects if the robot will experience a collision
 bool RobotController::collision_found() const {
-    if(bumper_hit_) return true;
+    // if(bumper_hit_) return true;
 
-    // if(scan_ready() && front_min_range() < SAFETY_DISTANCE_) return true; TODO uncomment this later to see if we can avoid a bumper hit.
+    if(scan_ready() && front_min_range() < SAFETY_DISTANCE_) return true;
 
     return false;
 }
