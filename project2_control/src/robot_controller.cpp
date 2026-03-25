@@ -416,55 +416,6 @@ void RobotController::control_loop() {
         }
     }
 
-    /*if(!latest_scan_ || !latest_odom_) return;
-
-    update_distance_traveled(last_published_cmd_);
-
-    geometry_msgs::msg::TwistStamped chosen;
-
-    // 1. Halt — bumper equivalent via laser global minimum
-    if(collision_found()) {
-        escape_active_ = false;
-        random_turn_active_ = false;
-        chosen = halt_command();
-        RCLCPP_WARN(this->get_logger(), "[HALT] min=%.3f", global_min_range());
-    }
-    // 2. Keyboard teleop
-    else if(teleop_active()) {
-        RCLCPP_WARN(this->get_logger(), "[TELEOP ACTIVE]");
-
-        escape_active_ = false;
-        random_turn_active_ = false;
-        chosen = keyboard_command();
-    } else {
-        // 3. Escape
-        geometry_msgs::msg::TwistStamped esc = escape_command();
-        if(escape_active_ || std::fabs(esc.twist.angular.z) > 1e-6) {  // <-- FIXED
-            random_turn_active_ = false;
-            dist_traveled_turn_ = 0.0;
-            chosen = esc;
-        } else {
-            // 4. Avoid fires while asymmetric obstacle present
-            geometry_msgs::msg::TwistStamped av = avoid_command();
-            if(std::fabs(av.twist.angular.z) > 1e-6) {  // <-- FIXED
-                random_turn_active_ = false;
-                dist_traveled_turn_ = 0.0;
-                chosen = av;
-            } else {
-                // 5. Random turn
-                RCLCPP_WARN(this->get_logger(), "[RANDOM TURN ACTIVE]");
-
-                geometry_msgs::msg::TwistStamped rt = random_turn_command();
-                if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {  // <-- FIXED
-                    chosen = rt;
-                } else {
-                    // 6. Forward — base layer
-                    chosen = forward_command();
-                }
-            }
-        }
-    }
-    */
     last_published_cmd_ = chosen;
 
     // Add Timestamp before publishing! (Crucial for hardware to accept the command)
