@@ -278,7 +278,6 @@ geometry_msgs::msg::TwistStamped RobotController::avoid_command() {
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
-    /*
     double min_left, min_right;
     front_left_right_mins(min_left, min_right);
 
@@ -300,7 +299,7 @@ geometry_msgs::msg::TwistStamped RobotController::avoid_command() {
 
     RCLCPP_INFO(this->get_logger(),
                 "[AVOID] L=%.3f R=%.3f az=%.2f", min_left, min_right, cmd.twist.angular.z);  // <-- FIXED
-                */
+
     return cmd;
 }
 
@@ -381,7 +380,14 @@ void RobotController::control_loop() {
             dist_traveled_turn_ = 0.0;
             chosen = esc;
         } else {
-            chosen = forward_command();
+            geometry_msgs::msg::TwistStamped av = avoid_command();
+            if(std::fabs(av.twist.angular.z) > 1e-6) {  // <-- FIXED
+                random_turn_active_ = false;
+                dist_traveled_turn_ = 0.0;
+                chosen = av;
+            } else {
+                chosen = forward_command();
+            }
         }
     }
 
