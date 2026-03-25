@@ -405,6 +405,7 @@ void RobotController::control_loop() {
                     // 6. Forward — base layer
                     chosen = forward_command();
                 }
+                chosen = forward_command();
             }
         }
     }
