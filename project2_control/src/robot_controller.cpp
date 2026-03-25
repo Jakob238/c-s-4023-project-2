@@ -207,7 +207,7 @@ double RobotController::global_min_range() const {
 bool RobotController::collision_found() const {
     // if(bumper_hit_) return true;
 
-    if(scan_ready() && front_min_range() < SAFETY_DISTANCE_) return true;
+    if(scan_ready() && global_min_range() < SAFETY_DISTANCE_) return true;
 
     return false;
 }
