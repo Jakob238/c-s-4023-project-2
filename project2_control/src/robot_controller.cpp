@@ -374,6 +374,7 @@ void RobotController::control_loop() {
         // bumper_hit_ = true;
     } else {
         // bumper_hit_ = false;
+        geometry_msgs::msg::TwistStamped esc = escape_command();
 
         if(escape_active_ || std::fabs(esc.twist.angular.z) > 1e-6) {  // <-- FIXED
             random_turn_active_ = false;
