@@ -368,6 +368,8 @@ void RobotController::update_distance_traveled(
 void RobotController::control_loop() {
     if(!latest_scan_ || !latest_odom_) return;
 
+    update_distance_traveled(last_published_cmd_);
+
     geometry_msgs::msg::TwistStamped chosen;
 
     if(collision_found()) {
@@ -391,7 +393,7 @@ void RobotController::control_loop() {
             } else {
                 geometry_msgs::msg::TwistStamped rt = random_turn_command();
                 RCLCPP_WARN(this->get_logger(), "[DIST TRAVELED] = %.3f", dist_traveled_turn_);
-                
+
                 if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {  // <-- FIXED
                     RCLCPP_WARN(this->get_logger(), "[RT]");
 
