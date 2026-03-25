@@ -351,7 +351,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
 // Moves the robot forward
 geometry_msgs::msg::TwistStamped RobotController::forward_command() const {
     geometry_msgs::msg::TwistStamped cmd;
-    cmd.twist.linear.x = FORWARD_SPEED_;
+    cmd.twist.linear.x = /*FORWARD_SPEED_;*/ 0 
     cmd.twist.angular.z = 0.0;
 
     RCLCPP_WARN(this->get_logger(), "[CUR TWIST] linear.x=%.3f angular.z=%.3f", cmd.twist.linear.x, cmd.twist.angular.z);
