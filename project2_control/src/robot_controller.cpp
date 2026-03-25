@@ -180,11 +180,14 @@ const double FORWARD_ANGLE_OFFSET = -1 * M_PI / 2;  // 180 deg
 // Split the front +-30 degrees cone into left and right halves,
 // using the corrected forward direction.
 void RobotController::front_left_right_mins(double& min_left, double& min_right) const {
-    const double half_cone = M_PI / 6.0;  // 30 degrees each side
+    const double half_cone = 30.0 * M_PI / 180.0;  // 30 degrees each side
     // Left side of the robot corresponds to angles [forward, forward + half_cone]
     // Right side corresponds to [forward - half_cone, forward]
     min_left = min_range_in_angle_window(FORWARD_ANGLE_OFFSET, FORWARD_ANGLE_OFFSET + half_cone);
     min_right = min_range_in_angle_window(FORWARD_ANGLE_OFFSET - half_cone, FORWARD_ANGLE_OFFSET);
+
+    RCLCPP_INFO(this->get_logger(),
+                "[FRONT LEFT RIGHT MINS] L=%.3f R=%.3f az=%.2f", min_left, min_right);  // <-- FIXED
 }
 
 // Narrow dead-ahead window: +=10 degrees around forward direction.
