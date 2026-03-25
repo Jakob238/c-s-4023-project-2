@@ -375,7 +375,13 @@ void RobotController::control_loop() {
     } else {
         // bumper_hit_ = false;
 
-        chosen = forward_command();
+        if(escape_active_ || std::fabs(esc.twist.angular.z) > 1e-6) {  // <-- FIXED
+            random_turn_active_ = false;
+            dist_traveled_turn_ = 0.0;
+            chosen = esc;
+        } else {
+            chosen = forward_command();
+        }
     }
 
     /*if(!latest_scan_ || !latest_odom_) return;
