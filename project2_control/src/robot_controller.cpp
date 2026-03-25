@@ -175,7 +175,7 @@ double RobotController::min_range_in_angle_window(double angle_lo, double angle_
 }
 
 // Attempted fix for backwards laser readings
-const double FORWARD_ANGLE_OFFSET = M_PI;  // 180 deg
+const double FORWARD_ANGLE_OFFSET = 0.0;  // 180 deg
 
 // Split the front +-30 degrees cone into left and right halves,
 // using the corrected forward direction.
@@ -208,9 +208,8 @@ bool RobotController::collision_found() const {
     // if(bumper_hit_) return true;
 
     if(scan_ready() && front_min_range() < SAFETY_DISTANCE_) return true;
-   
 
-        return false;
+    return false;
 }
 
 // Stops all of the robot velocity aspects
