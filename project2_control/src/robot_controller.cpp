@@ -351,10 +351,9 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
 // Moves the robot forward
 geometry_msgs::msg::TwistStamped RobotController::forward_command() const {
     geometry_msgs::msg::TwistStamped cmd;
-    cmd.twist.linear.x = /*FORWARD_SPEED_;*/ 0 
-    cmd.twist.angular.z = 0.0;
+    cmd.twist.linear.x = /*FORWARD_SPEED_;*/ 0 cmd.twist.angular.z = 0.0;
 
-    //RCLCPP_WARN(this->get_logger(), "[CUR TWIST] linear.x=%.3f angular.z=%.3f", cmd.twist.linear.x, cmd.twist.angular.z);
+    // RCLCPP_WARN(this->get_logger(), "[CUR TWIST] linear.x=%.3f angular.z=%.3f", cmd.twist.linear.x, cmd.twist.angular.z);
 
     return cmd;
 }
@@ -446,6 +445,6 @@ void RobotController::control_loop() {
     chosen.header.frame_id = "base_link";
 
     cmd_pub_->publish(chosen);
-    RCLCPP_WARN(this->get_logger(), "[PUB] linear.x=%.3f angular.z=%.3f",
-                chosen.twist.linear.x, chosen.twist.angular.z);  // <-- FIXED
+    // RCLCPP_WARN(this->get_logger(), "[PUB] linear.x=%.3f angular.z=%.3f",
+    //             chosen.twist.linear.x, chosen.twist.angular.z);  // <-- FIXED
 }
