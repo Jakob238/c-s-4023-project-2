@@ -250,6 +250,7 @@ geometry_msgs::msg::TwistStamped RobotController::escape_command() {
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
+    /*
     // Continue committed turn until target yaw is reached
     if(escape_active_) {
         const double err = angle_diff(escape_target_yaw_, current_yaw_);
@@ -285,6 +286,7 @@ geometry_msgs::msg::TwistStamped RobotController::escape_command() {
             cmd.twist.angular.z = (err > 0.0) ? ESCAPE_TURN_SPEED_ : -ESCAPE_TURN_SPEED_;  // <-- FIXED
         }
     }
+        */
     return cmd;
 }
 
@@ -295,6 +297,7 @@ geometry_msgs::msg::TwistStamped RobotController::avoid_command() {
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
+    /*
     double min_left, min_right;
     front_left_right_mins(min_left, min_right);
 
@@ -316,6 +319,7 @@ geometry_msgs::msg::TwistStamped RobotController::avoid_command() {
 
     RCLCPP_INFO(this->get_logger(),
                 "[AVOID] L=%.3f R=%.3f az=%.2f", min_left, min_right, cmd.twist.angular.z);  // <-- FIXED
+                */
     return cmd;
 }
 
@@ -325,7 +329,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
-    if(random_turn_active_) {
+    /*if(random_turn_active_) {
         const double err = angle_diff(random_turn_target_yaw_, current_yaw_);
         if(std::fabs(err) < 0.05) {
             random_turn_active_ = false;
@@ -346,7 +350,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
                     "[RANDOM_TURN] delta=%.1fdeg", delta * 180.0 / M_PI);
         const double err = angle_diff(random_turn_target_yaw_, current_yaw_);
         cmd.twist.angular.z = (err > 0.0) ? RANDOM_TURN_SPEED_ : -RANDOM_TURN_SPEED_;  // <-- FIXED
-    }
+    }*/
     return cmd;
 }
 
