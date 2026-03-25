@@ -14,8 +14,9 @@ RobotController::RobotController()
       random_turn_active_(false),
       random_turn_target_yaw_(0.0),
       rng_(rd_()),
-      random_small_turn_rad_(-M_PI / 12.0, M_PI / 12.0),  // ±15 deg per spec
-      escape_extra_turn_rad_(-M_PI / 6.0, M_PI / 6.0) {   // ±30 deg per spec
+      random_small_turn_rad_(-M_PI / 12.0, M_PI / 12.0),  // +-15 deg per spec
+      escape_extra_turn_rad_(-M_PI / 6.0, M_PI / 6.0) {   // +-30 deg per spec
+      bumper_pressed_ = false;
 
     // Publisher for velocity commands
     cmd_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
@@ -30,6 +31,9 @@ RobotController::RobotController()
     key_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
         "/cmd_vel_key", 10,
         std::bind(&RobotController::keyboard_callback, this, std::placeholders::_1));
+    hazard_sub_ = this->create_subscription<hazard_detection_msgs::msg::HazardDetectionStamped>(
+        "/hazard_detection", 10,
+        std::bind(&RobotController::hazard_callback, this, std::placeholders::_1));
 
     // Timing for teleop
     key_timeout_sec_ = 0.25;
@@ -43,9 +47,9 @@ RobotController::RobotController()
     OBSTACLE_DISTANCE_ = 0.3048;
 
     FORWARD_SPEED_ = 0.10;
-    AVOID_TURN_SPEED_ = 1.2;
-    ESCAPE_TURN_SPEED_ = 1.2;
-    RANDOM_TURN_SPEED_ = 0.8;
+    AVOID_TURN_SPEED_ = 0.3;
+    ESCAPE_TURN_SPEED_ = 0.3;
+    RANDOM_TURN_SPEED_ = 0.2;
 
     latest_scan_ = nullptr;
     latest_odom_ = nullptr;
@@ -99,6 +103,15 @@ void RobotController::keyboard_callback(
     const geometry_msgs::msg::TwistStamped::SharedPtr msg) {
     last_key_cmd_ = *msg;
     last_key_time_ = this->now();
+}
+
+// Update bumper state based on hazard detection messages
+void RobotController::hazard_callback(
+    const hazard_detection_msgs::msg::HazardDetectionStamped::SharedPtr msg) {
+    bumper_pressed_ = (msg->hazard_detection.bump != 0);
+    if (bumper_pressed_) {
+        RCLCPP_WARN(this->get_logger(), "BUMPER PRESSED!");
+    }
 }
 
 // Utility Functions
@@ -174,7 +187,7 @@ double RobotController::min_range_in_angle_window(double angle_lo, double angle_
 }
 
 // Attempted fix for backwards laser readings
-const double FORWARD_ANGLE_OFFSET = M_PI;  // 180 deg
+const double FORWARD_ANGLE_OFFSET = 0.0;  // 0 deg
 
 // Split the front +-30 degrees cone into left and right halves,
 // using the corrected forward direction.
@@ -362,12 +375,12 @@ void RobotController::control_loop() {
 
     geometry_msgs::msg::TwistStamped chosen;
 
-    // 1. Halt — bumper equivalent via laser global minimum
-    if(collision_found()) {
+    // 1. Halt 
+    if (bumper_pressed_) {
         escape_active_ = false;
         random_turn_active_ = false;
         chosen = halt_command();
-        RCLCPP_WARN(this->get_logger(), "[HALT] min=%.3f", global_min_range());
+        RCLCPP_WARN(this->get_logger(), "[HALT] bumper triggered");
     }
     // 2. Keyboard teleop
     else if(teleop_active()) {
@@ -407,7 +420,7 @@ void RobotController::control_loop() {
 
     last_published_cmd_ = chosen;
 
-    // Add Timestamp before publishing! (Crucial for hardware to accept the command)
+    // Add Timestamp before publishing (Crucial for hardware to accept the command)
     chosen.header.stamp = this->now();
     chosen.header.frame_id = "base_link";
 

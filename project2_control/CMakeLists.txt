@@ -17,6 +17,7 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(hazard_detection_msgs REQUIRED)
 
 add_executable(project2_controller
   src/main.cpp
@@ -35,6 +36,7 @@ ament_target_dependencies(project2_controller
   nav_msgs
   tf2
   tf2_geometry_msgs
+  hazard_detection_msgs
 )
 
 install(TARGETS
