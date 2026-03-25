@@ -73,6 +73,8 @@ void RobotController::scan_callback(
 }
 
 void RobotController::hazard_callback(const irobot_create_msgs::msg::HazardDetectionVector::SharedPtr msg) {
+    RCLCPP_WARN(this->get_logger(), "Bumper contact detected!");
+
     bumper_hit_ = false;
     for(const auto& detection : msg->detections) {
         if(detection.type == irobot_create_msgs::msg::HazardDetection::BUMP) {
