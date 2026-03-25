@@ -232,7 +232,6 @@ geometry_msgs::msg::TwistStamped RobotController::escape_command() {
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
-    /*
     // Continue committed turn until target yaw is reached
     if(escape_active_) {
         const double err = angle_diff(escape_target_yaw_, current_yaw_);
@@ -268,7 +267,7 @@ geometry_msgs::msg::TwistStamped RobotController::escape_command() {
             cmd.twist.angular.z = (err > 0.0) ? ESCAPE_TURN_SPEED_ : -ESCAPE_TURN_SPEED_;  // <-- FIXED
         }
     }
-        */
+
     return cmd;
 }
 
