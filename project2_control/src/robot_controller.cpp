@@ -73,8 +73,8 @@ void RobotController::odom_callback(
     latest_odom_ = msg;
 
     // Store previous position for distance tracking
-    last_x_position_ = current_x_position_;
-    last_y_position_ = current_y_position_;
+    // last_x_position_ = current_x_position_;
+    // last_y_position_ = current_y_position_;
 
     // Takes the current position from odometry
     // and changes it to the robot's current x and y position and yaw angle
@@ -324,7 +324,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
     }
 
     // Trigger after every 1ft of forward travel
-    if(dist_traveled_turn_ >= OBSTACLE_DISTANCE_ / 2) {
+    if(dist_traveled_turn_ >= OBSTACLE_DISTANCE_) {
         const double delta = random_small_turn_rad_(rng_);  // +- 15 degrees
         random_turn_target_yaw_ = normalize_angle(current_yaw_ + delta);
         random_turn_active_ = true;
@@ -357,6 +357,9 @@ void RobotController::update_distance_traveled(
         const double dy = current_y_position_ - last_y_position_;
         dist_traveled_turn_ += std::hypot(dx, dy);
     }
+
+    last_x_position_ = current_x_position_;
+    last_y_position_ = current_y_position_;
 }
 
 // Control loop
