@@ -324,7 +324,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
     }
 
     // Trigger after every 1ft of forward travel
-    if(dist_traveled_turn_ >= OBSTACLE_DISTANCE_) {
+    if(dist_traveled_turn_ >= OBSTACLE_DISTANCE_ / 4) {
         const double delta = random_small_turn_rad_(rng_);  // +- 15 degrees
         random_turn_target_yaw_ = normalize_angle(current_yaw_ + delta);
         random_turn_active_ = true;
