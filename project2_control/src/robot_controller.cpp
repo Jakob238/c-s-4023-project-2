@@ -390,6 +390,8 @@ void RobotController::control_loop() {
                 chosen = av;
             } else {
                 geometry_msgs::msg::TwistStamped rt = random_turn_command();
+                RCLCPP_WARN(this->get_logger(), "[DIST TRAVELED] = %.3f", dist_traveled_turn_);
+                
                 if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {  // <-- FIXED
                     RCLCPP_WARN(this->get_logger(), "[RT]");
 
