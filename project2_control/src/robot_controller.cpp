@@ -312,7 +312,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
-    /*if(random_turn_active_) {
+    if(random_turn_active_) {
         const double err = angle_diff(random_turn_target_yaw_, current_yaw_);
         if(std::fabs(err) < 0.05) {
             random_turn_active_ = false;
@@ -333,7 +333,7 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
                     "[RANDOM_TURN] delta=%.1fdeg", delta * 180.0 / M_PI);
         const double err = angle_diff(random_turn_target_yaw_, current_yaw_);
         cmd.twist.angular.z = (err > 0.0) ? RANDOM_TURN_SPEED_ : -RANDOM_TURN_SPEED_;  // <-- FIXED
-    }*/
+    }
     return cmd;
 }
 
