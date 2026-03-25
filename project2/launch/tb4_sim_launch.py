@@ -16,6 +16,17 @@ def generate_launch_description():
         )
     )
 
+    # 2. The Map Builder (SLAM)
+    slam_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('turtlebot4_navigation'),
+                'launch',
+                'slam.launch.py'
+            )
+        )
+    )
+
     controller_node = Node(
         package='project2_control',
         executable='project2_controller',
@@ -30,6 +41,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         controller_node,
-        view_navigation_launch
+        view_navigation_launch,
+        slam_launch
         
     ])
