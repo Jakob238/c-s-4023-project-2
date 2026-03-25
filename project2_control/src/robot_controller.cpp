@@ -389,7 +389,13 @@ void RobotController::control_loop() {
                 dist_traveled_turn_ = 0.0;
                 chosen = av;
             } else {
-                chosen = forward_command();
+                geometry_msgs::msg::TwistStamped rt = random_turn_command();
+                if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {  // <-- FIXED
+                    chosen = rt;
+                } else {
+                    // 6. Forward — base layer
+                    chosen = forward_command();
+                }
             }
         }
     }
