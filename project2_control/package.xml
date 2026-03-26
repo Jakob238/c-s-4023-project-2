@@ -2,9 +2,11 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>project2_control</name>
-  <version>0.0.0</version>
-  <description>Provides a reactive robot controller that can react to obstacles and be teloperated</description>
-  <maintainer email="hyde@ou.edu">Hyde</maintainer>
+  <version>0.1.0</version>
+  <description>Provides a reactive robot controller that can react to obstacles and be teloperated.</description>
+  <maintainer email="hyde@ou.edu">Hyde Harris</maintainer>
+  <maintainer email="jakoblinenberger-1@ou.edu">Jakob Linenberger</maintainer>
+
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

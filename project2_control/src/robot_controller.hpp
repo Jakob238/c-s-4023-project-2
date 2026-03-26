@@ -25,7 +25,7 @@ class RobotController : public rclcpp::Node {
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr key_sub_;
-    rclcpp::Subscription<irobot_create_msgs::msg::HazardDetectionVector>::SharedPtr hazard_sub_;
+    // rclcpp::Subscription<irobot_create_msgs::msg::HazardDetectionVector>::SharedPtr hazard_sub_;
 
     // Publisher - for cmd_vel
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_pub_;
@@ -75,8 +75,6 @@ class RobotController : public rclcpp::Node {
     bool random_turn_active_;
     double random_turn_target_yaw_;
 
-    bool bumper_hit_;
-
     // Random number generation
     std::random_device rd_;
     std::mt19937 rng_;
@@ -95,7 +93,7 @@ class RobotController : public rclcpp::Node {
     double front_min_range() const;
     double global_min_range() const;
 
-    // Behavior functions (priority 1–6)
+    // Behavior functions
     geometry_msgs::msg::TwistStamped halt_command();
     geometry_msgs::msg::TwistStamped keyboard_command() const;
     geometry_msgs::msg::TwistStamped escape_command();

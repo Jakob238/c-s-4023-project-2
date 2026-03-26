@@ -6,6 +6,7 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
+    # Launch rviz2 in navigation mode
     view_navigation_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -16,7 +17,7 @@ def generate_launch_description():
         )
     )
 
-    # 2. The Map Builder (SLAM)
+    # Build the SLAM mapping
     slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -27,16 +28,17 @@ def generate_launch_description():
         )
     )
 
+    # Launch the controller
     controller_node = Node(
         package='project2_control',
         executable='project2_controller',
         name='project2_controller',
         output='screen',
-        parameters=[{
-            'linear_vel': 0.1,
-            'angular_vel': 0.2,
-            'distance_threshold': 0.3048
-        }]
+        #parameters=[{
+            #'linear_vel': 0.1,
+            #'angular_vel': 0.2,
+            #'distance_threshold': 0.3048
+        #}]
     )
 
     return LaunchDescription([
