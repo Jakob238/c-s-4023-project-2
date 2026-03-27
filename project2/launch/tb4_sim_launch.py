@@ -17,7 +17,7 @@ def generate_launch_description():
         )
     )
 
-    # Build the SLAM mapping
+    # Build the SLAM mapping for TurtleBot4
     slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
@@ -28,7 +28,7 @@ def generate_launch_description():
         )
     )
 
-    # Launch the controller
+    # Launches the controller node
     controller_node = Node(
         package='project2_control',
         executable='project2_controller',
@@ -36,6 +36,7 @@ def generate_launch_description():
         output='screen',
     )
 
+    # Returns the launch description with the nodes and launch files
     return LaunchDescription([
         controller_node,
         view_navigation_launch,
