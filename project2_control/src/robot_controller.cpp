@@ -1,8 +1,8 @@
 #include "robot_controller.hpp"
 
+// Initialize controller
 RobotController::RobotController()
     : Node("robot_controller"),
-      // State variable initilization
       current_yaw_(0.0),
       current_x_position_(0.0),
       current_y_position_(0.0),
@@ -14,9 +14,8 @@ RobotController::RobotController()
       random_turn_active_(false),
       random_turn_target_yaw_(0.0),
       rng_(rd_()),
-      random_small_turn_rad_(-M_PI / 12.0, M_PI / 12.0),  // +-15 deg per spec
-      escape_extra_turn_rad_(-M_PI / 6.0, M_PI / 6.0) {   // +-30 deg per spec
-      bumper_pressed_ = false;
+      random_small_turn_rad_(-M_PI / 12.0, M_PI / 12.0),  // +/- 15 deg
+      escape_extra_turn_rad_(-M_PI / 6.0, M_PI / 6.0) {   // +/- 30 deg
 
     // Publisher for velocity commands
     cmd_pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel", 10);
@@ -31,9 +30,6 @@ RobotController::RobotController()
     key_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
         "/cmd_vel_key", 10,
         std::bind(&RobotController::keyboard_callback, this, std::placeholders::_1));
-    hazard_sub_ = this->create_subscription<hazard_detection_msgs::msg::HazardDetectionStamped>(
-        "/hazard_detection", 10,
-        std::bind(&RobotController::hazard_callback, this, std::placeholders::_1));
 
     // Timing for teleop
     key_timeout_sec_ = 0.25;
@@ -41,15 +37,15 @@ RobotController::RobotController()
     last_key_cmd_ = geometry_msgs::msg::TwistStamped();
 
     // Constants
-    // Safety threshold 0.22–0.30m (slightly larger than robot radius)
+    // Safety threshold (slightly larger than robot radius)
     SAFETY_DISTANCE_ = 0.27;
     // Avoid/escape trigger within 1 foot
-    OBSTACLE_DISTANCE_ = 0.3048;
+    OBSTACLE_DISTANCE_ = 0.3048 * 2;  // 2x to account for robot radius
 
     FORWARD_SPEED_ = 0.10;
-    AVOID_TURN_SPEED_ = 0.3;
-    ESCAPE_TURN_SPEED_ = 0.3;
-    RANDOM_TURN_SPEED_ = 0.2;
+    AVOID_TURN_SPEED_ = 1.2;
+    ESCAPE_TURN_SPEED_ = 1.2;
+    RANDOM_TURN_SPEED_ = 0.8;
 
     latest_scan_ = nullptr;
     latest_odom_ = nullptr;
@@ -63,8 +59,10 @@ RobotController::RobotController()
     RCLCPP_INFO(this->get_logger(), "RobotController started.");
 }
 
-// Callback Functions
+// -------------------------------------
+// --------- Callback Functions ---------
 
+// Store the latest scanner data
 void RobotController::scan_callback(
     const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     latest_scan_ = msg;
@@ -75,12 +73,7 @@ void RobotController::odom_callback(
     const nav_msgs::msg::Odometry::SharedPtr msg) {
     latest_odom_ = msg;
 
-    // Store previous position for distance tracking
-    last_x_position_ = current_x_position_;
-    last_y_position_ = current_y_position_;
-
-    // Takes the current position from odometry
-    // and changes it to the robot's current x and y position and yaw angle
+    // Update the current x/y positions
     current_x_position_ = msg->pose.pose.position.x;
     current_y_position_ = msg->pose.pose.position.y;
 
@@ -105,16 +98,8 @@ void RobotController::keyboard_callback(
     last_key_time_ = this->now();
 }
 
-// Update bumper state based on hazard detection messages
-void RobotController::hazard_callback(
-    const hazard_detection_msgs::msg::HazardDetectionStamped::SharedPtr msg) {
-    bumper_pressed_ = (msg->hazard_detection.bump != 0);
-    if (bumper_pressed_) {
-        RCLCPP_WARN(this->get_logger(), "BUMPER PRESSED!");
-    }
-}
-
-// Utility Functions
+// -------------------------------------
+// --------- Utility Functions ---------
 
 // Detects if teleop is currently active based on time since last key input
 bool RobotController::teleop_active() const {
@@ -135,8 +120,7 @@ double RobotController::angle_diff(double target, double current) {
     return normalize_angle(target - current);
 }
 
-// Verifies that a valid, non-empty laser scan exists with a positive,
-// finite resolution.
+// Verifies that a valid, non-empty laser scan exists with a positive, finite value.
 bool RobotController::scan_ready() const {
     return latest_scan_ &&
            !latest_scan_->ranges.empty() &&
@@ -144,7 +128,7 @@ bool RobotController::scan_ready() const {
            latest_scan_->angle_increment > 0.0;
 }
 
-// Returns the minimum finite range reading within the angular window [angle_lo, angle_hi]
+// Returns the minimum finite range reading within the scanned window [angle_lo, angle_hi]
 double RobotController::min_range_in_angle_window(double angle_lo, double angle_hi) const {
     if(!scan_ready()) return std::numeric_limits<double>::infinity();
 
@@ -186,26 +170,29 @@ double RobotController::min_range_in_angle_window(double angle_lo, double angle_
     return min_r;
 }
 
-// Attempted fix for backwards laser readings
-const double FORWARD_ANGLE_OFFSET = 0.0;  // 0 deg
+// The scanner readings need an offset in order to read from the front.
+const double FORWARD_ANGLE_OFFSET = -1 * M_PI / 2;
 
-// Split the front +-30 degrees cone into left and right halves,
-// using the corrected forward direction.
+// Split the front +/-30 degrees cone into left and right halves,
+// then find the lowest value for both sides.
 void RobotController::front_left_right_mins(double& min_left, double& min_right) const {
-    const double half_cone = M_PI / 6.0;  // 30 degrees each side
+    const double half_cone = 30.0 * M_PI / 180.0;  // 30 degrees each side
     // Left side of the robot corresponds to angles [forward, forward + half_cone]
     // Right side corresponds to [forward - half_cone, forward]
     min_left = min_range_in_angle_window(FORWARD_ANGLE_OFFSET, FORWARD_ANGLE_OFFSET + half_cone);
     min_right = min_range_in_angle_window(FORWARD_ANGLE_OFFSET - half_cone, FORWARD_ANGLE_OFFSET);
+
+    RCLCPP_INFO(this->get_logger(),
+                "[FRONT LEFT RIGHT MINS] L=%.3f R=%.3f", min_left, min_right);  // <-- FIXED
 }
 
-// Narrow dead-ahead window: +=10 degrees around forward direction.
+// Find min in narrow forward window +/-10 degrees around forward direction.
 double RobotController::front_min_range() const {
     const double half = 10.0 * M_PI / 180.0;
     return min_range_in_angle_window(FORWARD_ANGLE_OFFSET - half, FORWARD_ANGLE_OFFSET + half);
 }
 
-// Absolute minimum across all beams for halt detection
+// Absolute minimum across all beams for halt detection.
 double RobotController::global_min_range() const {
     if(!scan_ready()) return std::numeric_limits<double>::infinity();
     double m = std::numeric_limits<double>::infinity();
@@ -215,13 +202,14 @@ double RobotController::global_min_range() const {
     return m;
 }
 
-// Detects if the robot will experience a collision
+// Detects if the robot will experience a collision.
 bool RobotController::collision_found() const {
-    if(!scan_ready()) return false;
-    return global_min_range() < SAFETY_DISTANCE_;
+    if(scan_ready() && front_min_range() < SAFETY_DISTANCE_) return true;
+
+    return false;
 }
 
-// Stops all of the robot velocity aspects
+// Stops all of the robot velocity.
 geometry_msgs::msg::TwistStamped RobotController::halt_command() {
     geometry_msgs::msg::TwistStamped cmd;
     cmd.twist.linear.x = 0.0;
@@ -229,13 +217,13 @@ geometry_msgs::msg::TwistStamped RobotController::halt_command() {
     return cmd;
 }
 
-// Gets the latest keyboard command
+// Gets the latest keyboard command.
 geometry_msgs::msg::TwistStamped RobotController::keyboard_command() const {
     return last_key_cmd_;
 }
 
 // Allows the robot to escape symmetric obstacles within 1ft
-// by turing ~180 +- 30 degrees
+// by turing ~180 +/- 30 degrees
 geometry_msgs::msg::TwistStamped RobotController::escape_command() {
     geometry_msgs::msg::TwistStamped cmd;
     cmd.twist.linear.x = 0.0;
@@ -250,11 +238,11 @@ geometry_msgs::msg::TwistStamped RobotController::escape_command() {
             RCLCPP_INFO(this->get_logger(), "[ESCAPE] complete");
             return cmd;
         }
-        cmd.twist.angular.z = (err > 0.0) ? ESCAPE_TURN_SPEED_ : -ESCAPE_TURN_SPEED_;  // <-- FIXED
+        cmd.twist.angular.z = (err > 0.0) ? ESCAPE_TURN_SPEED_ : -ESCAPE_TURN_SPEED_;
         return cmd;
     }
 
-    // Trigger condition: both halves of front cone within 1ft AND symmetric
+    // Both halves of front cone within 1ft
     double min_left, min_right;
     front_left_right_mins(min_left, min_right);
     const double min_front = front_min_range();
@@ -263,19 +251,23 @@ geometry_msgs::msg::TwistStamped RobotController::escape_command() {
     const bool right_close = std::isfinite(min_right) && min_right < OBSTACLE_DISTANCE_;
     const bool front_close = std::isfinite(min_front) && min_front < OBSTACLE_DISTANCE_;
 
-    if(left_close && right_close && front_close) {
+    // Removed front close case because of an edge-case where the robot has a symmetric obstacle with a small gap.
+    if((left_close && right_close && front_close) || (left_close && right_close)) {
         const double diff = std::fabs(min_left - min_right);
         if(diff < 0.12) {
-            const double turn = M_PI + escape_extra_turn_rad_(rng_);  // 180° ±30°
+            const double turn = M_PI + escape_extra_turn_rad_(rng_);  // 180 /+- 30
             escape_target_yaw_ = normalize_angle(current_yaw_ + turn);
             escape_active_ = true;
+
             RCLCPP_WARN(this->get_logger(),
-                        "[ESCAPE] triggered L=%.3f R=%.3f F=%.3f turn=%.0fdeg",
+                        "[ESCAPE] L=%.3f R=%.3f F=%.3f turn=%.0fdeg",
                         min_left, min_right, min_front, turn * 180.0 / M_PI);
+
             const double err = angle_diff(escape_target_yaw_, current_yaw_);
-            cmd.twist.angular.z = (err > 0.0) ? ESCAPE_TURN_SPEED_ : -ESCAPE_TURN_SPEED_;  // <-- FIXED
+            cmd.twist.angular.z = (err > 0.0) ? ESCAPE_TURN_SPEED_ : -ESCAPE_TURN_SPEED_;
         }
     }
+
     return cmd;
 }
 
@@ -292,30 +284,33 @@ geometry_msgs::msg::TwistStamped RobotController::avoid_command() {
     const bool left_close = std::isfinite(min_left) && min_left < OBSTACLE_DISTANCE_;
     const bool right_close = std::isfinite(min_right) && min_right < OBSTACLE_DISTANCE_;
 
-    // Nothing in the front cone
+    // Nothing in the front cone.
     if(!left_close && !right_close) return cmd;
 
-    // Both sides close and symmetric yield to escape
+    // Both sides close and symmetric yield to escape.
     if(left_close && right_close && std::fabs(min_left - min_right) < 0.12) return cmd;
 
-    // Asymmetric obstacle turn away from whichever side is closer
+    // Asymmetric obstacle turn away from whichever side is closer.
     const double l = left_close ? min_left : std::numeric_limits<double>::infinity();
     const double r = right_close ? min_right : std::numeric_limits<double>::infinity();
-    // Obstacle closer on left, turn right
-    // Obstacle closer on right, turn left
-    cmd.twist.angular.z = (l < r) ? -AVOID_TURN_SPEED_ : AVOID_TURN_SPEED_;  // <-- FIXED
+
+    // Obstacle closer on left, turn right.
+    // Obstacle closer on right, turn left.
+    cmd.twist.angular.z = (l < r) ? -AVOID_TURN_SPEED_ : AVOID_TURN_SPEED_;
 
     RCLCPP_INFO(this->get_logger(),
-                "[AVOID] L=%.3f R=%.3f az=%.2f", min_left, min_right, cmd.twist.angular.z);  // <-- FIXED
+                "[AVOID] L=%.3f R=%.3f az=%.2f", min_left, min_right, cmd.twist.angular.z);
+
     return cmd;
 }
 
-// Creates a random turn command
+// Creates a random turn command.
 geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
     geometry_msgs::msg::TwistStamped cmd;
     cmd.twist.linear.x = 0.0;
     cmd.twist.angular.z = 0.0;
 
+    // If a random turn is already in progress.
     if(random_turn_active_) {
         const double err = angle_diff(random_turn_target_yaw_, current_yaw_);
         if(std::fabs(err) < 0.05) {
@@ -323,36 +318,39 @@ geometry_msgs::msg::TwistStamped RobotController::random_turn_command() {
             dist_traveled_turn_ = 0.0;
             return cmd;
         }
-        cmd.twist.angular.z = (err > 0.0) ? RANDOM_TURN_SPEED_ : -RANDOM_TURN_SPEED_;  // <-- FIXED
+        cmd.twist.angular.z = (err > 0.0) ? RANDOM_TURN_SPEED_ : -RANDOM_TURN_SPEED_;
         return cmd;
     }
 
-    // Trigger after every 1ft of forward travel
-    if(dist_traveled_turn_ >= OBSTACLE_DISTANCE_) {
-        const double delta = random_small_turn_rad_(rng_);  // +- 15 degrees
+    // Trigger after every 1ft of forward travel.
+    if(dist_traveled_turn_ >= OBSTACLE_DISTANCE_ / 2) {
+        const double delta = random_small_turn_rad_(rng_);  // +/- 15 degrees
         random_turn_target_yaw_ = normalize_angle(current_yaw_ + delta);
         random_turn_active_ = true;
         dist_traveled_turn_ = 0.0;
+
         RCLCPP_INFO(this->get_logger(),
                     "[RANDOM_TURN] delta=%.1fdeg", delta * 180.0 / M_PI);
+
         const double err = angle_diff(random_turn_target_yaw_, current_yaw_);
-        cmd.twist.angular.z = (err > 0.0) ? RANDOM_TURN_SPEED_ : -RANDOM_TURN_SPEED_;  // <-- FIXED
+        cmd.twist.angular.z = (err > 0.0) ? RANDOM_TURN_SPEED_ : -RANDOM_TURN_SPEED_;
     }
     return cmd;
 }
 
-// Moves the robot forward
+// Moves the robot forward.
 geometry_msgs::msg::TwistStamped RobotController::forward_command() const {
     geometry_msgs::msg::TwistStamped cmd;
     cmd.twist.linear.x = FORWARD_SPEED_;
+
     cmd.twist.angular.z = 0.0;
 
-    RCLCPP_WARN(this->get_logger(), "[CUR TWIST] linear.x=%.3f angular.z=%.3f", cmd.twist.linear.x, cmd.twist.angular.z);
+    // RCLCPP_WARN(this->get_logger(), "[CUR TWIST] linear.x=%.3f angular.z=%.3f", cmd.twist.linear.x, cmd.twist.angular.z);
 
     return cmd;
 }
 
-// Updates the distance traveled to determine if a random turn should occur
+// Updates the distance traveled to determine if a random turn should occur.
 void RobotController::update_distance_traveled(
     const geometry_msgs::msg::TwistStamped& cmd) {
     if(cmd.twist.linear.x > 0.0 && std::fabs(cmd.twist.angular.z) < 1e-6) {
@@ -360,71 +358,76 @@ void RobotController::update_distance_traveled(
         const double dy = current_y_position_ - last_y_position_;
         dist_traveled_turn_ += std::hypot(dx, dy);
     }
+
+    // Update position values.
+    last_x_position_ = current_x_position_;
+    last_y_position_ = current_y_position_;
 }
 
-// Control loop
-// Subsumption-style priority arbitration.
+// --------------------------------
+// --------- Control loop ---------
+// Subsumption-style priority rules.
 // Priority order: Halt (1) > Teleop (2) > Escape (3) > Avoid (4) >
 //                 RandomTurn (5) > Forward (6)
 // Each higher-priority behavior suppresses all lower ones when active.
 
 void RobotController::control_loop() {
-    if(!latest_scan_ || !latest_odom_) return;
+    if(!latest_scan_ || !latest_odom_) return;  // If no valid readings are being recieved, do nothing.
 
-    update_distance_traveled(last_published_cmd_);
+    update_distance_traveled(last_published_cmd_);  // Update the distance travelled from last cmd.
 
-    geometry_msgs::msg::TwistStamped chosen;
+    geometry_msgs::msg::TwistStamped chosen;  // Initialize the next command.
 
-    // 1. Halt 
-    if (bumper_pressed_) {
-        escape_active_ = false;
-        random_turn_active_ = false;
+    if(collision_found()) {
+        // Behavior 1: HALT
         chosen = halt_command();
-        RCLCPP_WARN(this->get_logger(), "[HALT] bumper triggered");
-    }
-    // 2. Keyboard teleop
-    else if(teleop_active()) {
+        RCLCPP_WARN(this->get_logger(), "[HALT] min=%.3f", global_min_range());
+
+    } else if(teleop_active()) {
+        // Behavior 2: TELEOP
         RCLCPP_WARN(this->get_logger(), "[TELEOP ACTIVE]");
 
         escape_active_ = false;
         random_turn_active_ = false;
         chosen = keyboard_command();
     } else {
-        // 3. Escape
+        // Behavior 3: ESCAPE
         geometry_msgs::msg::TwistStamped esc = escape_command();
-        if(escape_active_ || std::fabs(esc.twist.angular.z) > 1e-6) {  // <-- FIXED
+
+        if(escape_active_ || std::fabs(esc.twist.angular.z) > 1e-6) {
             random_turn_active_ = false;
             dist_traveled_turn_ = 0.0;
             chosen = esc;
         } else {
-            // 4. Avoid fires while asymmetric obstacle present
+            // Behavior 4: AVOID
             geometry_msgs::msg::TwistStamped av = avoid_command();
-            if(std::fabs(av.twist.angular.z) > 1e-6) {  // <-- FIXED
+            if(std::fabs(av.twist.angular.z) > 1e-6) {
                 random_turn_active_ = false;
                 dist_traveled_turn_ = 0.0;
                 chosen = av;
             } else {
-                // 5. Random turn
-                RCLCPP_WARN(this->get_logger(), "[RANDOM TURN ACTIVE]");
-
                 geometry_msgs::msg::TwistStamped rt = random_turn_command();
-                if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {  // <-- FIXED
+                RCLCPP_WARN(this->get_logger(), "[DIST TRAVELED] = %.3f", dist_traveled_turn_);
+
+                if(random_turn_active_ || std::fabs(rt.twist.angular.z) > 1e-6) {
+                    // Behavior 5: Random Turn
+                    RCLCPP_WARN(this->get_logger(), "[RT ACTIVE]");
                     chosen = rt;
                 } else {
-                    // 6. Forward — base layer
+                    // Behavior 6: Forward Motion
                     chosen = forward_command();
                 }
             }
         }
     }
 
-    last_published_cmd_ = chosen;
+    last_published_cmd_ = chosen;  // Update the last action to be the chosen action.
 
-    // Add Timestamp before publishing (Crucial for hardware to accept the command)
+    // Add timestamp as required by the physical robot.
     chosen.header.stamp = this->now();
     chosen.header.frame_id = "base_link";
 
-    cmd_pub_->publish(chosen);
+    cmd_pub_->publish(chosen);  // Publish cmd.
     RCLCPP_WARN(this->get_logger(), "[PUB] linear.x=%.3f angular.z=%.3f",
-                chosen.twist.linear.x, chosen.twist.angular.z);  // <-- FIXED
+                chosen.twist.linear.x, chosen.twist.angular.z);
 }

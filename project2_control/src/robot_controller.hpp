@@ -7,14 +7,14 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <geometry_msgs/msg/twist_stamped.hpp>  
+#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <irobot_create_msgs/msg/hazard_detection_vector.hpp>
 #include <limits>
 #include <nav_msgs/msg/odometry.hpp>
 #include <random>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <vector>
-#include <hazard_detection_msgs/msg/hazard_detection_stamped.hpp>
 
 class RobotController : public rclcpp::Node {
    public:
@@ -25,7 +25,7 @@ class RobotController : public rclcpp::Node {
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
     rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr key_sub_;
-    rclcpp::Subscription<hazard_detection_msgs::msg::HazardDetectionStamped>::SharedPtr hazard_sub_;
+    // rclcpp::Subscription<irobot_create_msgs::msg::HazardDetectionVector>::SharedPtr hazard_sub_;
 
     // Publisher - for cmd_vel
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_pub_;
@@ -37,7 +37,7 @@ class RobotController : public rclcpp::Node {
     void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
     void keyboard_callback(const geometry_msgs::msg::TwistStamped::SharedPtr msg);
-    void hazard_callback(const hazard_detection_msgs::msg::HazardDetectionStamped::SharedPtr msg);
+    void hazard_callback(const irobot_create_msgs::msg::HazardDetectionVector::SharedPtr msg);
 
     nav_msgs::msg::Odometry::SharedPtr latest_odom_;
     sensor_msgs::msg::LaserScan::SharedPtr latest_scan_;
@@ -78,11 +78,8 @@ class RobotController : public rclcpp::Node {
     // Random number generation
     std::random_device rd_;
     std::mt19937 rng_;
-    std::uniform_real_distribution<double> random_small_turn_rad_;  // +-15 deg
-    std::uniform_real_distribution<double> escape_extra_turn_rad_;  // +-30 deg
-
-    // Bumper state
-    bool bumper_pressed_;
+    std::uniform_real_distribution<double> random_small_turn_rad_;  // ±15 deg
+    std::uniform_real_distribution<double> escape_extra_turn_rad_;  // ±30 deg
 
     // Helper functions
     bool teleop_active() const;
@@ -96,7 +93,7 @@ class RobotController : public rclcpp::Node {
     double front_min_range() const;
     double global_min_range() const;
 
-    // Behavior functions (priority 1–6)
+    // Behavior functions
     geometry_msgs::msg::TwistStamped halt_command();
     geometry_msgs::msg::TwistStamped keyboard_command() const;
     geometry_msgs::msg::TwistStamped escape_command();
